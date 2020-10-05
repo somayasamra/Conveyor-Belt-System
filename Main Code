@@ -1,0 +1,86 @@
+
+// LCD module connections
+sbit LCD_RS at RD2_bit;
+sbit LCD_EN at RD3_bit;
+sbit LCD_D4 at RD4_bit;
+sbit LCD_D5 at RD5_bit;
+sbit LCD_D6 at RD6_bit;
+sbit LCD_D7 at RD7_bit;
+
+sbit LCD_RS_Direction at TRISD2_bit;
+sbit LCD_EN_Direction at TRISD3_bit;
+sbit LCD_D4_Direction at TRISD4_bit;
+sbit LCD_D5_Direction at TRISD5_bit;
+sbit LCD_D6_Direction at TRISD6_bit;
+sbit LCD_D7_Direction at TRISD7_bit;
+// End LCD module connections
+
+
+ int weight,i,j; char Num[5],skip[8],count[5];
+void main()
+{
+  TRISC.F7=0;                         // CONFIGURE C7 AS OUTPUT
+  TRISE.F3=1;                      // CONFIGURE E3 AS INPUT
+  TRISA.F1=1;                      // CONFIGURE A1 AS INPUT
+  TRISA.F4=1;                      // CONFIGURE A4 AS INPUT
+  ANSEL.F1=1;                     // SET AN1 AS ANALOG
+  TRISC.F0=0;                    // CONFIGURE C0 AS OUTPUT
+  TRISC.F1=0;                    // CONFIGURE C1 AS OUTPUT
+  PORTC.F0=PORTC.F1=PORTC.F7=0;   // PORT C0 , C1 & C7 INITIALLY OFF
+  TMR0=0;                        // CLEAR COUNTER
+  OPTION_REG.F5=1;               // TO USE TIMER0 AS A COUNTER (WE CAN WRITE OPTION_REG.T0CS=)
+  OPTION_REG.F4=0;              // DETECTING RISING EDGE IN T0SE REG
+  OPTION_REG.F3=1;              // TO DISABLE PRESCALER (WE CAN WRITE OPTION_REG.PSA)
+  ADCON0.F0=1;                  // TO ENABLE ADC
+  Lcd_Init();                  // Initialize LCD
+
+  Lcd_Cmd(_LCD_CLEAR);               // Clear display
+  Lcd_Cmd(_LCD_CURSOR_OFF);          // Cursor off
+
+  while(1)
+  {
+     weight=ADC_read(1);       //Reading ADC Value from (AN1) into (weight)
+     weight=weight/50;
+
+     if(weight>=8 && weight<=10)
+    {
+    PORTC.F0=1; PORTC.F1=0; delay_ms(500);             // TURN GREEN LED ON
+    }
+    if(weight>10 || weight<8 )
+    {
+    PORTC.F1=1; PORTC.F0=0; delay_ms(500);             // TURN RED LED ON
+    }
+
+     IntToStr(weight,skip);     //Converting the Decimal number to array of characters
+     delay_ms(10);             //wait until ADC Reading & converting is done
+     Lcd_Out(1,1,"Weight= ");   // Displaying text in row 1 col 1
+       j=0;
+     for(i=0; i<8; i++)
+        {
+           if(skip[i] != ' ')
+               { Num[j]=skip[i]; j++; }
+        }
+     Lcd_Out(1,8,Num);
+     Lcd_Out(1,10,"KG");     // Displaying text in row 1 col 3
+     
+        PORTC.F7=1;               // TURN MOTOR ON
+         if(TMR0==9)
+    {
+      PORTC.F7=0;     delay_ms(5000);    PORTC.F7=1;      // TURN MOTOR OFF FOR 5 SECS
+      TMR0=0;
+    }
+
+     IntToStr(TMR0,skip);     //Converting the Decimal number to array of characters
+           j=0;
+        for(i=0; i<8; i++)
+        {
+           if(skip[i] != ' ')
+               { count[j]=skip[i]; j++; }
+        }
+     delay_ms(10);             //wait until ADC Reading & converting is done
+     Lcd_Out(2,1,"#ofBoxes= ");   // Displaying text in row 2 col 1
+     Lcd_Out(2,11,count);     // Displaying TMR0 value
+      delay_ms(1000);
+     Lcd_Cmd(_LCD_CLEAR);    // Clear the Display after 1 sec
+  }
+}       
